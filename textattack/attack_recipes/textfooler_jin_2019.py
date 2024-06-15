@@ -32,12 +32,19 @@ class TextFoolerJin2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper):
+    def build(model_wrapper, is_tokenizer_whitebox=False):
         #
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
         #
-        transformation = WordSwapEmbedding(max_candidates=50)
+        if is_tokenizer_whitebox:
+            transformation = WordSwapEmbedding(
+                max_candidates=50,
+                is_tokenizer_whitebox=is_tokenizer_whitebox,
+                is_oov=model_wrapper.is_oov,
+            )
+        else:
+            transformation = WordSwapEmbedding(max_candidates=50)
         #
         # Don't modify the same word twice or the stopwords defined
         # in the TextFooler public implementation.
