@@ -33,7 +33,7 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper):
+    def build(model_wrapper, is_tokenizer_whitebox=False):
         #
         # Section 5: Experiments
         #
@@ -102,7 +102,14 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
         #
         # "[We] fix the hyperparameter values to S = 60, N = 8, K = 4, and δ = 0.5"
         #
-        transformation = WordSwapEmbedding(max_candidates=8)
+        if is_tokenizer_whitebox:
+            transformation = WordSwapEmbedding(
+                max_candidates=8,
+                is_tokenizer_whitebox=is_tokenizer_whitebox,
+                is_oov=model_wrapper.is_oov,
+            )
+        else:
+            transformation = WordSwapEmbedding(max_candidates=8)
         #
         # Don't modify the same word twice or stopwords
         #

@@ -26,6 +26,10 @@ class ModelWrapper(ABC):
         """Get gradient of loss with respect to input tokens."""
         raise NotImplementedError()
 
+    def is_oov(self, word):
+        """Returns whether the word is out-of-vocabulary (OOV) for the model."""
+        raise NotImplementedError()
+
     def _tokenize(self, inputs):
         """Helper method for `tokenize`"""
         raise NotImplementedError()

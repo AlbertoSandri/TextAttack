@@ -29,7 +29,14 @@ class WordSwapEmbedding(WordSwap):
     >>> augmenter.augment(s)
     """
 
-    def __init__(self, max_candidates=15, embedding=None, **kwargs):
+    def __init__(
+        self,
+        max_candidates=15,
+        embedding=None,
+        is_tokenizer_whitebox=False,
+        is_oov=None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         if embedding is None:
             embedding = WordEmbedding.counterfitted_GLOVE_embedding()
@@ -39,6 +46,8 @@ class WordSwapEmbedding(WordSwap):
                 "`embedding` object must be of type `textattack.shared.AbstractWordEmbedding`."
             )
         self.embedding = embedding
+        self.is_tokenizer_whitebox = is_tokenizer_whitebox
+        self.is_oov = is_oov
 
     def _get_replacement_words(self, word):
         """Returns a list of possible 'candidate words' to replace a word in a
@@ -53,6 +62,12 @@ class WordSwapEmbedding(WordSwap):
             for i, nbr_id in enumerate(nnids):
                 nbr_word = self.embedding.index2word(nbr_id)
                 candidate_words.append(recover_word_case(nbr_word, word))
+            if self.is_tokenizer_whitebox and candidate_words:
+                oov_words = []
+                for candidate_word in candidate_words:
+                    if self.is_oov(candidate_word):  # TODO could do this in a batch
+                        oov_words.append(candidate_word)
+                return oov_words
             return candidate_words
         except KeyError:
             # This word is not in our word embedding database, so return an empty list.
