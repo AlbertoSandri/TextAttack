@@ -35,29 +35,68 @@ class DeepWordBugGao2018(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, use_all_transformations=True):
+    def build(model_wrapper, use_all_transformations=True, is_tokenizer_whitebox=False):
         #
         # Swap characters out from words. Choose the best of four potential transformations.
         #
-        if use_all_transformations:
-            # We propose four similar methods:
-            transformation = CompositeTransformation(
-                [
-                    # (1) Swap: Swap two adjacent letters in the word.
-                    WordSwapNeighboringCharacterSwap(),
-                    # (2) Substitution: Substitute a letter in the word with a random letter.
-                    WordSwapRandomCharacterSubstitution(),
-                    # (3) Deletion: Delete a random letter from the word.
-                    WordSwapRandomCharacterDeletion(),
-                    # (4) Insertion: Insert a random letter in the word.
-                    WordSwapRandomCharacterInsertion(),
-                ]
-            )
+        if is_tokenizer_whitebox:
+            if use_all_transformations:
+                # We propose four similar methods:
+                transformation = CompositeTransformation(
+                    [
+                        # (1) Swap: Swap two adjacent letters in the word.
+                        WordSwapNeighboringCharacterSwap(
+                            is_tokenizer_whitebox=is_tokenizer_whitebox,
+                            is_oov=model_wrapper.is_oov,
+                        ),
+                        # (2) Substitution: Substitute a letter in the word with a random letter.
+                        WordSwapRandomCharacterSubstitution(
+                            is_tokenizer_whitebox=is_tokenizer_whitebox,
+                            is_oov=model_wrapper.is_oov,
+                            max_candidates=50,
+                        ),
+                        # (3) Deletion: Delete a random letter from the word.
+                        WordSwapRandomCharacterDeletion(
+                            is_tokenizer_whitebox=is_tokenizer_whitebox,
+                            is_oov=model_wrapper.is_oov,
+                        ),
+                        # (4) Insertion: Insert a random letter in the word.
+                        WordSwapRandomCharacterInsertion(
+                            is_tokenizer_whitebox=is_tokenizer_whitebox,
+                            is_oov=model_wrapper.is_oov,
+                            max_candidates=50,
+                        ),
+                    ]
+                )
+            else:
+                # We use the Combined Score and the Substitution Transformer to generate
+                # adversarial samples, with the maximum edit distance difference of 30
+                # (ϵ = 30).
+                transformation = WordSwapRandomCharacterSubstitution(
+                    is_tokenizer_whitebox=is_tokenizer_whitebox,
+                    is_oov=model_wrapper.is_oov,
+                    max_candidates=50,
+                )
         else:
-            # We use the Combined Score and the Substitution Transformer to generate
-            # adversarial samples, with the maximum edit distance difference of 30
-            # (ϵ = 30).
-            transformation = WordSwapRandomCharacterSubstitution()
+            if use_all_transformations:
+                # We propose four similar methods:
+                transformation = CompositeTransformation(
+                    [
+                        # (1) Swap: Swap two adjacent letters in the word.
+                        WordSwapNeighboringCharacterSwap(),
+                        # (2) Substitution: Substitute a letter in the word with a random letter.
+                        WordSwapRandomCharacterSubstitution(),
+                        # (3) Deletion: Delete a random letter from the word.
+                        WordSwapRandomCharacterDeletion(),
+                        # (4) Insertion: Insert a random letter in the word.
+                        WordSwapRandomCharacterInsertion(),
+                    ]
+                )
+            else:
+                # We use the Combined Score and the Substitution Transformer to generate
+                # adversarial samples, with the maximum edit distance difference of 30
+                # (ϵ = 30).
+                transformation = WordSwapRandomCharacterSubstitution()
         #
         # Don't modify the same word twice or stopwords
         #

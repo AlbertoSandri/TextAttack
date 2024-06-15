@@ -28,12 +28,22 @@ class WordSwapRandomCharacterInsertion(WordSwap):
     """
 
     def __init__(
-        self, random_one=True, skip_first_char=False, skip_last_char=False, **kwargs
+        self,
+        random_one=True,
+        skip_first_char=False,
+        skip_last_char=False,
+        is_tokenizer_whitebox=False,
+        is_oov=None,
+        max_candidates=1,
+        **kwargs
     ):
         super().__init__(**kwargs)
         self.random_one = random_one
         self.skip_first_char = skip_first_char
         self.skip_last_char = skip_last_char
+        self.is_tokenizer_whitebox = is_tokenizer_whitebox
+        self.is_oov = is_oov
+        self.max_candidates = max_candidates
 
     def _get_replacement_words(self, word):
         """Returns returns a list containing all possible words with 1 random
@@ -50,13 +60,29 @@ class WordSwapRandomCharacterInsertion(WordSwap):
             return []
 
         if self.random_one:
-            i = np.random.randint(start_idx, end_idx)
-            candidate_word = word[:i] + self._get_random_letter() + word[i:]
-            candidate_words.append(candidate_word)
+            if self.is_tokenizer_whitebox:
+                for _ in range(self.max_candidates):
+                    i = np.random.randint(start_idx, end_idx)
+                    candidate_word = word[:i] + self._get_random_letter() + word[i:]
+                    if self.is_oov(candidate_word):
+                        candidate_words.append(candidate_word)
+                        break
+            else:
+                i = np.random.randint(start_idx, end_idx)
+                candidate_word = word[:i] + self._get_random_letter() + word[i:]
+                candidate_words.append(candidate_word)
         else:
             for i in range(start_idx, end_idx):
                 candidate_word = word[:i] + self._get_random_letter() + word[i:]
                 candidate_words.append(candidate_word)
+            if (
+                self.is_tokenizer_whitebox and candidate_words
+            ):  # TODO need to consider the max_candidates
+                oov_words = []
+                for candidate_word in candidate_words:
+                    if self.is_oov(candidate_word):  # TODO could do this in a batch
+                        oov_words.append(candidate_word)
+                return oov_words
 
         return candidate_words
 
