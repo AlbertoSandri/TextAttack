@@ -27,13 +27,20 @@ class IGAWang2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper):
+    def build(model_wrapper, is_tokenizer_whitebox=False):
         #
         # Swap words with their embedding nearest-neighbors.
         # Embedding: Counter-fitted Paragram Embeddings.
         # Fix the hyperparameter value to N = Unrestricted (50)."
         #
-        transformation = WordSwapEmbedding(max_candidates=50)
+        if is_tokenizer_whitebox:
+            transformation = WordSwapEmbedding(
+                max_candidates=50,
+                is_tokenizer_whitebox=is_tokenizer_whitebox,
+                is_oov=model_wrapper.is_oov,
+            )
+        else:
+            transformation = WordSwapEmbedding(max_candidates=50)
         #
         # Don't modify the stopwords
         #
