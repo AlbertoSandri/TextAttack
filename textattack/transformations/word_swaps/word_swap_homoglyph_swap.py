@@ -81,36 +81,21 @@ class WordSwapHomoglyphSwap(WordSwap):
         replaced by a homoglyph."""
         candidate_words = []
 
-        if self.random_one:
-            if self.is_tokenizer_whitebox:
-                for _ in range(self.max_candidates):
-                    i = np.random.randint(0, len(word))
-                    if word[i] in self.homos:
-                        repl_letter = self.homos[word[i]]
-                        candidate_word = word[:i] + repl_letter + word[i + 1 :]
-                        if self.is_oov(candidate_word):
-                            candidate_words.append(candidate_word)
-                            break
-            else:
-                i = np.random.randint(0, len(word))
-                if word[i] in self.homos:
-                    repl_letter = self.homos[word[i]]
-                    candidate_word = word[:i] + repl_letter + word[i + 1 :]
-                    candidate_words.append(candidate_word)
-        else:
-            for i in range(len(word)):
-                if word[i] in self.homos:
-                    repl_letter = self.homos[word[i]]
-                    candidate_word = word[:i] + repl_letter + word[i + 1 :]
-                    candidate_words.append(candidate_word)
-            if (
-                self.is_tokenizer_whitebox and candidate_words
-            ):  # TODO need to consider the max_candidates
-                oov_words = []
-                for candidate_word in candidate_words:
-                    if self.is_oov(candidate_word):  # TODO could do this in a batch
-                        oov_words.append(candidate_word)
-                return oov_words
+        for i in range(len(word)):
+            if word[i] in self.homos:
+                repl_letter = self.homos[word[i]]
+                candidate_word = word[:i] + repl_letter + word[i + 1 :]
+                candidate_words.append(candidate_word)
+
+        if self.is_tokenizer_whitebox and candidate_words:
+            is_oov_words = self.is_oov(candidate_words)
+            candidate_words = [
+                candidate_words[i] for i, is_oov in enumerate(is_oov_words) if is_oov
+            ]
+
+        if self.random_one and candidate_words:
+            i = np.random.randint(0, len(candidate_words))
+            candidate_words = [candidate_words[i]]
 
         return candidate_words
 
