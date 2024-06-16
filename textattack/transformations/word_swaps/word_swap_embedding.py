@@ -63,12 +63,11 @@ class WordSwapEmbedding(WordSwap):
                 nbr_word = self.embedding.index2word(nbr_id)
                 candidate_words.append(recover_word_case(nbr_word, word))
             if self.is_tokenizer_whitebox and candidate_words:
-                is_oov_words = self.is_oov(candidate_words)
-                candidate_words = [
-                    candidate_words[i]
-                    for i, is_oov in enumerate(is_oov_words)
-                    if is_oov
-                ]
+                oov_words = []
+                for candidate_word in candidate_words:
+                    if self.is_oov(candidate_word):
+                        oov_words.append(candidate_word)
+                candidate_words = oov_words
             return candidate_words
         except KeyError:
             # This word is not in our word embedding database, so return an empty list.

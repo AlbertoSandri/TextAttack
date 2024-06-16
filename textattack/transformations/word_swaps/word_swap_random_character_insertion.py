@@ -64,7 +64,7 @@ class WordSwapRandomCharacterInsertion(WordSwap):
                 for _ in range(self.max_candidates):
                     i = np.random.randint(start_idx, end_idx)
                     candidate_word = word[:i] + self._get_random_letter() + word[i:]
-                    if self.is_oov([candidate_word])[0]:
+                    if self.is_oov(candidate_word):
                         candidate_words.append(candidate_word)
                         break
             else:
@@ -76,12 +76,11 @@ class WordSwapRandomCharacterInsertion(WordSwap):
                 candidate_word = word[:i] + self._get_random_letter() + word[i:]
                 candidate_words.append(candidate_word)
             if self.is_tokenizer_whitebox and candidate_words:
-                is_oov_words = self.is_oov(candidate_words)
-                candidate_words = [
-                    candidate_words[i]
-                    for i, is_oov in enumerate(is_oov_words)
-                    if is_oov
-                ]
+                oov_words = []
+                for candidate_word in candidate_words:
+                    if self.is_oov(candidate_word):
+                        oov_words.append(candidate_word)
+                candidate_words = oov_words
 
         return candidate_words
 
