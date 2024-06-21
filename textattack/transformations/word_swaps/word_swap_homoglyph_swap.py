@@ -25,13 +25,10 @@ class WordSwapHomoglyphSwap(WordSwap):
     def __init__(
         self,
         random_one=False,
-        bert_tokenizer=False,
-        bert_tokenizer2=False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.homos = {
-            "-": "˗",
             "9": "৭",
             "8": "Ȣ",
             "7": "𝟕",
@@ -42,7 +39,6 @@ class WordSwapHomoglyphSwap(WordSwap):
             "2": "ᒿ",
             "1": "l",
             "0": "O",
-            "'": "`",
             "a": "ɑ",
             "b": "Ь",
             "c": "ϲ",
@@ -77,7 +73,6 @@ class WordSwapHomoglyphSwap(WordSwap):
         replaced by a homoglyph."""
         candidate_words = []
 
-
         if self.random_one:
             i = np.random.randint(0, len(word))
             if word[i] in self.homos:
@@ -92,7 +87,7 @@ class WordSwapHomoglyphSwap(WordSwap):
                     if self.is_oov(candidate_word):
                         candidate_words.append(candidate_word)
             if not candidate_words:
-                for homo in self.homos.keys():
+                for homo in self.homos.values():
                     candidate_word = word + homo
                     if self.is_oov(candidate_word):
                         candidate_words.append(candidate_word)

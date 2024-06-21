@@ -26,8 +26,19 @@ class ModelWrapper(ABC):
         """Get gradient of loss with respect to input tokens."""
         raise NotImplementedError()
 
-    def is_oov(self, word):
-        """Returns whether the word is out-of-vocabulary (OOV) for the model."""
+    def is_oov(self, word: str) -> bool:
+        """Check if the word is out-of-vocabulary (OOV). The word is OOV if at least one of its tokens is the OOV token.
+
+        Args:
+            word (str): Word to check.
+
+        Returns:
+            bool: Boolean indicating if the word is OOV.
+        """
+        raise NotImplementedError()
+
+    def set_oov_token(self, oov_token):
+        """Set the out-of-vocabulary (OOV) token for the model."""
         raise NotImplementedError()
 
     def _tokenize(self, inputs):

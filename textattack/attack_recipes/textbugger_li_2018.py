@@ -39,9 +39,20 @@ class TextBuggerLi2018(AttackRecipe):
     def build(
         model_wrapper,
         is_tokenizer_whitebox=False,
+        is_bert_tokenizer_whitebox=False,
     ):
-        if is_tokenizer_whitebox:
-            use_scorer = UniversalSentenceEncoder(metric="angular")
+        #
+        #  we propose five bug generation methods for TEXTBUGGER:
+        #
+        use_scorer = UniversalSentenceEncoder(metric="angular")
+        if is_bert_tokenizer_whitebox:
+            transformation = WordSwapHomoglyphSwap(
+                random_one=False,
+                is_tokenizer_whitebox=is_bert_tokenizer_whitebox,
+                is_oov=model_wrapper.is_oov,
+                use_scorer=use_scorer,
+            )
+        elif is_tokenizer_whitebox:
             transformation = CompositeTransformation(
                 [
                     # (1) Insert: Insert a space into the word.
