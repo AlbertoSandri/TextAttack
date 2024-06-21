@@ -16,6 +16,7 @@ from textattack.constraints.pre_transformation import (
     RepeatModification,
     StopwordModification,
 )
+from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.constraints.semantics import WordEmbeddingDistance
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import AlzantotGeneticAlgorithm
@@ -107,6 +108,7 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
                 max_candidates=8,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
+                use_scorer=UniversalSentenceEncoder(metric="angular"),
             )
         else:
             transformation = WordSwapEmbedding(max_candidates=8)

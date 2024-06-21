@@ -36,51 +36,56 @@ class TextBuggerLi2018(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, is_tokenizer_whitebox=False):
-        #
-        #  we propose five bug generation methods for TEXTBUGGER:
-        #
+    def build(
+        model_wrapper,
+        is_tokenizer_whitebox=False,
+    ):
         if is_tokenizer_whitebox:
+            use_scorer = UniversalSentenceEncoder(metric="angular")
             transformation = CompositeTransformation(
                 [
                     # (1) Insert: Insert a space into the word.
                     # Generally, words are segmented by spaces in English. Therefore,
                     # we can deceive classifiers by inserting spaces into words.
                     WordSwapRandomCharacterInsertion(
-                        random_one=True,
+                        random_one=False,
                         letters_to_insert=" ",
                         skip_first_char=True,
                         skip_last_char=True,
                         is_tokenizer_whitebox=is_tokenizer_whitebox,
                         is_oov=model_wrapper.is_oov,
                         max_candidates=50,
+                        use_scorer=use_scorer,
                     ),
                     # (2) Delete: Delete a random character of the word except for the first
                     # and the last character.
                     WordSwapRandomCharacterDeletion(
-                        random_one=True,
+                        random_one=False,
                         skip_first_char=True,
                         skip_last_char=True,
                         is_tokenizer_whitebox=is_tokenizer_whitebox,
                         is_oov=model_wrapper.is_oov,
+                        use_scorer=use_scorer,
                     ),
                     # (3) Swap: Swap random two adjacent letters in the word but do not
                     # alter the first or last letter. This is a common occurrence when
                     # typing quickly and is easy to implement.
                     WordSwapNeighboringCharacterSwap(
-                        random_one=True,
+                        random_one=False,
                         skip_first_char=True,
                         skip_last_char=True,
                         is_tokenizer_whitebox=is_tokenizer_whitebox,
                         is_oov=model_wrapper.is_oov,
+                        use_scorer=use_scorer,
                     ),
                     # (4) Substitute-C (Sub-C): Replace characters with visually similar
                     # characters (e.g., replacing “o” with “0”, “l” with “1”, “a” with “@”)
                     # or adjacent characters in the keyboard (e.g., replacing “m” with “n”).
                     WordSwapHomoglyphSwap(
+                        random_one=False,
                         is_tokenizer_whitebox=is_tokenizer_whitebox,
                         is_oov=model_wrapper.is_oov,
-                        max_candidates=50,
+                        use_scorer=use_scorer,
                     ),
                     # (5) Substitute-W
                     # (Sub-W): Replace a word with its topk nearest neighbors in a
@@ -91,8 +96,11 @@ class TextBuggerLi2018(AttackRecipe):
                         max_candidates=5,
                         is_tokenizer_whitebox=is_tokenizer_whitebox,
                         is_oov=model_wrapper.is_oov,
+                        use_scorer=use_scorer,
                     ),
-                ]
+                ],
+                is_tokenizer_whitebox=is_tokenizer_whitebox,
+                use_scorer=use_scorer,
             )
         else:
             transformation = CompositeTransformation(
@@ -140,7 +148,7 @@ class TextBuggerLi2018(AttackRecipe):
         # ... "Furthermore, the semantic similarity threshold \eps is set
         # as 0.8 to guarantee a good trade-off between quality and
         # strength of the generated adversarial text."
-        constraints.append(UniversalSentenceEncoder(threshold=0.8))
+        # constraints.append(UniversalSentenceEncoder(threshold=0.8))
         #
         # Goal is untargeted classification
         #

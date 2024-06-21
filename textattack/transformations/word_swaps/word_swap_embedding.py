@@ -11,6 +11,7 @@ Paper title: Counter-fitting Word Vectors to Linguistic Constraints
 from textattack.shared import AbstractWordEmbedding, WordEmbedding
 
 from .word_swap import WordSwap
+import numpy as np
 
 
 class WordSwapEmbedding(WordSwap):
@@ -33,8 +34,6 @@ class WordSwapEmbedding(WordSwap):
         self,
         max_candidates=15,
         embedding=None,
-        is_tokenizer_whitebox=False,
-        is_oov=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -46,8 +45,6 @@ class WordSwapEmbedding(WordSwap):
                 "`embedding` object must be of type `textattack.shared.AbstractWordEmbedding`."
             )
         self.embedding = embedding
-        self.is_tokenizer_whitebox = is_tokenizer_whitebox
-        self.is_oov = is_oov
 
     def _get_replacement_words(self, word):
         """Returns a list of possible 'candidate words' to replace a word in a
@@ -63,11 +60,11 @@ class WordSwapEmbedding(WordSwap):
                 nbr_word = self.embedding.index2word(nbr_id)
                 candidate_words.append(recover_word_case(nbr_word, word))
             if self.is_tokenizer_whitebox and candidate_words:
-                oov_words = []
-                for candidate_word in candidate_words:
-                    if self.is_oov(candidate_word):
-                        oov_words.append(candidate_word)
-                candidate_words = oov_words
+                candidate_words = [
+                    candidate_word
+                    for candidate_word in candidate_words
+                    if self.is_oov(candidate_word)
+                ]
             return candidate_words
         except KeyError:
             # This word is not in our word embedding database, so return an empty list.

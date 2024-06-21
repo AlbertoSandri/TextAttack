@@ -12,6 +12,7 @@ from textattack.constraints.pre_transformation import (
     RepeatModification,
     StopwordModification,
 )
+from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
 from textattack.transformations import (
@@ -41,38 +42,50 @@ class DeepWordBugGao2018(AttackRecipe):
         #
         if is_tokenizer_whitebox:
             if use_all_transformations:
+                use_scorer = UniversalSentenceEncoder(metric="angular")
                 # We propose four similar methods:
                 transformation = CompositeTransformation(
                     [
                         # (1) Swap: Swap two adjacent letters in the word.
                         WordSwapNeighboringCharacterSwap(
+                            random_one=False,
                             is_tokenizer_whitebox=is_tokenizer_whitebox,
                             is_oov=model_wrapper.is_oov,
+                            use_scorer=use_scorer,
                         ),
                         # (2) Substitution: Substitute a letter in the word with a random letter.
                         WordSwapRandomCharacterSubstitution(
+                            random_one=False,
                             is_tokenizer_whitebox=is_tokenizer_whitebox,
                             is_oov=model_wrapper.is_oov,
                             max_candidates=50,
+                            use_scorer=use_scorer,
                         ),
                         # (3) Deletion: Delete a random letter from the word.
                         WordSwapRandomCharacterDeletion(
+                            random_one=False,
                             is_tokenizer_whitebox=is_tokenizer_whitebox,
                             is_oov=model_wrapper.is_oov,
+                            use_scorer=use_scorer,
                         ),
                         # (4) Insertion: Insert a random letter in the word.
                         WordSwapRandomCharacterInsertion(
+                            random_one=False,
                             is_tokenizer_whitebox=is_tokenizer_whitebox,
                             is_oov=model_wrapper.is_oov,
                             max_candidates=50,
+                            use_scorer=use_scorer,
                         ),
-                    ]
+                    ],
+                    is_tokenizer_whitebox=is_tokenizer_whitebox,
+                    use_scorer=use_scorer,
                 )
             else:
                 # We use the Combined Score and the Substitution Transformer to generate
                 # adversarial samples, with the maximum edit distance difference of 30
                 # (ϵ = 30).
                 transformation = WordSwapRandomCharacterSubstitution(
+                    random_one=False,
                     is_tokenizer_whitebox=is_tokenizer_whitebox,
                     is_oov=model_wrapper.is_oov,
                     max_candidates=50,

@@ -25,10 +25,9 @@ class WordSwapHomoglyphSwap(WordSwap):
     def __init__(
         self,
         random_one=False,
-        is_tokenizer_whitebox=False,
-        is_oov=None,
-        max_candidates=1,
-        **kwargs
+        bert_tokenizer=False,
+        bert_tokenizer2=False,
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.homos = {
@@ -72,31 +71,37 @@ class WordSwapHomoglyphSwap(WordSwap):
             "z": "ᴢ",
         }
         self.random_one = random_one
-        self.is_tokenizer_whitebox = is_tokenizer_whitebox
-        self.is_oov = is_oov
-        self.max_candidates = max_candidates
 
     def _get_replacement_words(self, word):
         """Returns a list containing all possible words with 1 character
         replaced by a homoglyph."""
         candidate_words = []
 
-        for i in range(len(word)):
+
+        if self.random_one:
+            i = np.random.randint(0, len(word))
             if word[i] in self.homos:
                 repl_letter = self.homos[word[i]]
                 candidate_word = word[:i] + repl_letter + word[i + 1 :]
                 candidate_words.append(candidate_word)
-
-        if self.is_tokenizer_whitebox and candidate_words:
-            oov_words = []
-            for candidate_word in candidate_words:
-                if self.is_oov(candidate_word):
-                    oov_words.append(candidate_word)
-            candidate_words = oov_words
-
-        if self.random_one and candidate_words:
-            i = np.random.randint(0, len(candidate_words))
-            candidate_words = [candidate_words[i]]
+        elif self.is_tokenizer_whitebox:
+            for i in range(len(word)):
+                if word[i] in self.homos:
+                    repl_letter = self.homos[word[i]]
+                    candidate_word = word[:i] + repl_letter + word[i + 1 :]
+                    if self.is_oov(candidate_word):
+                        candidate_words.append(candidate_word)
+            if not candidate_words:
+                for homo in self.homos.keys():
+                    candidate_word = word + homo
+                    if self.is_oov(candidate_word):
+                        candidate_words.append(candidate_word)
+        else:
+            for i in range(len(word)):
+                if word[i] in self.homos:
+                    repl_letter = self.homos[word[i]]
+                    candidate_word = word[:i] + repl_letter + word[i + 1 :]
+                    candidate_words.append(candidate_word)
 
         return candidate_words
 

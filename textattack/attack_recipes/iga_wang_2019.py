@@ -14,6 +14,7 @@ from textattack.constraints.semantics import WordEmbeddingDistance
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import ImprovedGeneticAlgorithm
 from textattack.transformations import WordSwapEmbedding
+from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 
 from .attack_recipe import AttackRecipe
 
@@ -38,6 +39,7 @@ class IGAWang2019(AttackRecipe):
                 max_candidates=50,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
+                use_scorer=UniversalSentenceEncoder(metric="angular"),
             )
         else:
             transformation = WordSwapEmbedding(max_candidates=50)

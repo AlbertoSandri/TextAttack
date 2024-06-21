@@ -29,20 +29,12 @@ class WordSwapRandomCharacterDeletion(WordSwap):
     """
 
     def __init__(
-        self,
-        random_one=True,
-        skip_first_char=False,
-        skip_last_char=False,
-        is_tokenizer_whitebox=False,
-        is_oov=None,
-        **kwargs
+        self, random_one=True, skip_first_char=False, skip_last_char=False, **kwargs
     ):
         super().__init__(**kwargs)
         self.random_one = random_one
         self.skip_first_char = skip_first_char
         self.skip_last_char = skip_last_char
-        self.is_tokenizer_whitebox = is_tokenizer_whitebox
-        self.is_oov = is_oov
 
     def _get_replacement_words(self, word):
         """Returns returns a list containing all possible words with 1 letter
@@ -58,20 +50,19 @@ class WordSwapRandomCharacterDeletion(WordSwap):
         if start_idx >= end_idx:
             return []
 
-        for i in range(start_idx, end_idx):
+        if self.random_one:
+            i = np.random.randint(start_idx, end_idx)
             candidate_word = word[:i] + word[i + 1 :]
             candidate_words.append(candidate_word)
-
-        if self.is_tokenizer_whitebox and candidate_words:
-            oov_words = []
-            for candidate_word in candidate_words:
+        elif self.is_tokenizer_whitebox:
+            for i in range(start_idx, end_idx):
+                candidate_word = word[:i] + word[i + 1 :]
                 if self.is_oov(candidate_word):
-                    oov_words.append(candidate_word)
-            candidate_words = oov_words
-
-        if self.random_one and candidate_words:
-            i = np.random.randint(0, len(candidate_words))
-            candidate_words = [candidate_words[i]]
+                    candidate_words.append(candidate_word)
+        else:
+            for i in range(start_idx, end_idx):
+                candidate_word = word[:i] + word[i + 1 :]
+                candidate_words.append(candidate_word)
 
         return candidate_words
 

@@ -39,9 +39,10 @@ class TextFoolerJin2019(AttackRecipe):
         #
         if is_tokenizer_whitebox:
             transformation = WordSwapEmbedding(
-                max_candidates=50,
+                max_candidates=100,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
+                use_scorer=UniversalSentenceEncoder(metric="angular"),
             )
         else:
             transformation = WordSwapEmbedding(max_candidates=50)
@@ -62,16 +63,16 @@ class TextFoolerJin2019(AttackRecipe):
         input_column_modification = InputColumnModification(
             ["premise", "hypothesis"], {"premise"}
         )
-        constraints.append(input_column_modification)
+        # constraints.append(input_column_modification)
         # Minimum word embedding cosine similarity of 0.5.
         # (The paper claims 0.7, but analysis of the released code and some empirical
         # results show that it's 0.5.)
         #
-        constraints.append(WordEmbeddingDistance(min_cos_sim=0.5))
+        # constraints.append(WordEmbeddingDistance(min_cos_sim=0.5))
         #
         # Only replace words with the same part of speech (or nouns with verbs)
         #
-        constraints.append(PartOfSpeech(allow_verb_noun_swap=True))
+        # constraints.append(PartOfSpeech(allow_verb_noun_swap=True))
         #
         # Universal Sentence Encoder with a minimum angular similarity of ε = 0.5.
         #
@@ -86,7 +87,7 @@ class TextFoolerJin2019(AttackRecipe):
             window_size=15,
             skip_text_shorter_than_window=True,
         )
-        constraints.append(use_constraint)
+        # constraints.append(use_constraint)
         #
         # Goal is untargeted classification
         #

@@ -25,19 +25,10 @@ class WordSwapRandomCharacterSubstitution(WordSwap):
     >>> augmenter.augment(s)
     """
 
-    def __init__(
-        self,
-        random_one=True,
-        is_tokenizer_whitebox=False,
-        is_oov=None,
-        max_candidates=1,
-        **kwargs
-    ):
+    def __init__(self, random_one=True, **kwargs):
         super().__init__(**kwargs)
         self.random_one = random_one
-        self.is_tokenizer_whitebox = is_tokenizer_whitebox
-        self.is_oov = is_oov
-        self.max_candidates = max_candidates
+        self.max_candidates = kwargs.get("max_candidates", 1)
 
     def _get_replacement_words(self, word):
         """Returns returns a list containing all possible words with 1 letter
@@ -48,29 +39,19 @@ class WordSwapRandomCharacterSubstitution(WordSwap):
         candidate_words = []
 
         if self.random_one:
-            if self.is_tokenizer_whitebox:
-                for _ in range(self.max_candidates):
-                    i = np.random.randint(0, len(word))
-                    candidate_word = (
-                        word[:i] + self._get_random_letter() + word[i + 1 :]
-                    )
-                    if self.is_oov(candidate_word):
-                        candidate_words.append(candidate_word)
-                        break
-            else:
+            i = np.random.randint(0, len(word))
+            candidate_word = word[:i] + self._get_random_letter() + word[i + 1 :]
+            candidate_words.append(candidate_word)
+        elif self.is_tokenizer_whitebox:
+            for _ in range(self.max_candidates):
                 i = np.random.randint(0, len(word))
                 candidate_word = word[:i] + self._get_random_letter() + word[i + 1 :]
-                candidate_words.append(candidate_word)
+                if self.is_oov(candidate_word):
+                    candidate_words.append(candidate_word)
         else:
             for i in range(len(word)):
                 candidate_word = word[:i] + self._get_random_letter() + word[i + 1 :]
                 candidate_words.append(candidate_word)
-            if self.is_tokenizer_whitebox and candidate_words:
-                oov_words = []
-                for candidate_word in candidate_words:
-                    if self.is_oov(candidate_word):
-                        oov_words.append(candidate_word)
-                candidate_words = oov_words
 
         return candidate_words
 

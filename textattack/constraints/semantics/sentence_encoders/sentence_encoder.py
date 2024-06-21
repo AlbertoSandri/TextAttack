@@ -10,6 +10,7 @@ import numpy as np
 import torch
 
 from textattack.constraints import Constraint
+from operator import itemgetter
 
 
 class SentenceEncoder(Constraint, ABC):
@@ -209,6 +210,40 @@ class SentenceEncoder(Constraint, ABC):
             "window_size",
             "skip_text_shorter_than_window",
         ] + super().extra_repr_keys()
+
+    def get_best_transformation(self, original_text, transformed_texts):
+        """Returns the best transformation from the list of transformed texts according to the USE score with the
+        original text."""
+        # Encode original and transformed texts
+        embeddings = self.encode(
+            [original_text.text] + [t.text for t in transformed_texts]
+        )
+        if not isinstance(embeddings, torch.Tensor):
+            embeddings = torch.tensor(embeddings)
+
+        starting_embedding = embeddings[0]
+        transformed_embeddings = embeddings[1:]
+
+        # Repeat original embedding to size of transformed embedding
+        starting_embeddings = starting_embedding.unsqueeze(dim=0).repeat(
+            len(transformed_embeddings), 1
+        )
+
+        # Compute USE score for each transformed text
+        use_scores = self.sim_metric(starting_embeddings, transformed_embeddings)
+
+        # Sort by USE score
+        transformed_texts = [
+            x
+            for _, x in sorted(
+                zip(use_scores, transformed_texts), reverse=True, key=itemgetter(0)
+            )
+        ]
+
+        # Pick just the best one
+        transformed_texts = [transformed_texts[0]]
+
+        return transformed_texts
 
 
 def get_angular_sim(emb1, emb2):
