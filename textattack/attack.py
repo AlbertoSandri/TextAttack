@@ -8,6 +8,7 @@ from typing import List, Union
 
 import lru
 import torch
+import random
 
 import textattack
 from textattack.attack_results import (
@@ -85,6 +86,8 @@ class Attack:
         search_method: SearchMethod,
         transformation_cache_size=2**15,
         constraint_cache_size=2**15,
+        is_tokenizer_whitebox=False,
+        use_scorer=None,
     ):
         """Initialize an attack object.
 
@@ -161,6 +164,10 @@ class Attack:
         self.search_method.get_indices_to_order = self.get_indices_to_order
 
         self.search_method.filter_transformations = self.filter_transformations
+
+        # Used when the tokenizer is white-box
+        self.is_tokenizer_whitebox = is_tokenizer_whitebox
+        self.use_scorer = use_scorer
 
     def clear_cache(self, recursive=True):
         self.constraints_cache.clear()
@@ -312,9 +319,21 @@ class Attack:
                 current_text, original_text, **kwargs
             )
 
-        return self.filter_transformations(
+        filtered_texts = self.filter_transformations(
             transformed_texts, current_text, original_text
         )
+
+        if self.is_tokenizer_whitebox and filtered_texts:
+            if self.use_scorer:
+                # Pick the best transformation according to USE
+                filtered_texts = self.use_scorer.get_best_transformation(
+                    original_text, filtered_texts
+                )
+            else:
+                # Pick a random one
+                filtered_texts = [random.choice(filtered_texts)]
+
+        return filtered_texts
 
     def _filter_transformations_uncached(
         self, transformed_texts, current_text, original_text=None

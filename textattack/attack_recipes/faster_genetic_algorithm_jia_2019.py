@@ -108,7 +108,6 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
                 max_candidates=8,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
-                use_scorer=UniversalSentenceEncoder(metric="angular"),
             )
         else:
             transformation = WordSwapEmbedding(max_candidates=8)
@@ -146,4 +145,11 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
             pop_size=60, max_iters=40, post_crossover_check=False
         )
 
-        return Attack(goal_function, constraints, transformation, search_method)
+        return Attack(
+            goal_function,
+            constraints,
+            transformation,
+            search_method,
+            is_tokenizer_whitebox=is_tokenizer_whitebox,
+            use_scorer=UniversalSentenceEncoder(metric="angular"),
+        )

@@ -27,9 +27,6 @@ class CompositeTransformation(Transformation):
         elif not len(transformations):
             raise ValueError("transformations cannot be empty")
         self.transformations = transformations
-        self.is_tokenizer_whitebox = kwargs.get("is_tokenizer_whitebox", False)
-        self.use_scorer = kwargs.get("use_scorer", None)
-        self.original_text = None
 
     def _get_transformations(self, *_):
         """Placeholder method that would throw an error if a user tried to
@@ -43,25 +40,7 @@ class CompositeTransformation(Transformation):
         for transformation in self.transformations:
             new_attacked_texts.update(transformation(*args, **kwargs))
 
-        transformed_texts = list(new_attacked_texts)
-
-        return_indices = kwargs.get("return_indices", False)
-
-        if return_indices:
-            # Save the original text
-            self.original_text = args[0]
-        else:
-            if self.is_tokenizer_whitebox and transformed_texts:
-                if self.use_scorer:
-                    # Pick the best transformation according to USE
-                    transformed_texts = self.use_scorer.get_best_transformation(
-                        self.original_text, transformed_texts
-                    )
-                else:
-                    # Pick a random one
-                    transformed_texts = [random.choice(transformed_texts)]
-
-        return transformed_texts
+        return list(new_attacked_texts)
 
     def __repr__(self):
         main_str = "CompositeTransformation" + "("

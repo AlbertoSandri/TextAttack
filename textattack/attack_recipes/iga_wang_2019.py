@@ -39,7 +39,6 @@ class IGAWang2019(AttackRecipe):
                 max_candidates=50,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
-                use_scorer=UniversalSentenceEncoder(metric="angular"),
             )
         else:
             transformation = WordSwapEmbedding(max_candidates=50)
@@ -72,4 +71,11 @@ class IGAWang2019(AttackRecipe):
             post_crossover_check=False,
         )
 
-        return Attack(goal_function, constraints, transformation, search_method)
+        return Attack(
+            goal_function,
+            constraints,
+            transformation,
+            search_method,
+            is_tokenizer_whitebox=is_tokenizer_whitebox,
+            use_scorer=UniversalSentenceEncoder(metric="angular"),
+        )
