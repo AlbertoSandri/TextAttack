@@ -88,6 +88,7 @@ class Attack:
         constraint_cache_size=2**15,
         is_tokenizer_whitebox=False,
         use_scorer=None,
+        return_all=False,
     ):
         """Initialize an attack object.
 
@@ -168,6 +169,7 @@ class Attack:
         # Used when the tokenizer is white-box
         self.is_tokenizer_whitebox = is_tokenizer_whitebox
         self.use_scorer = use_scorer
+        self.return_all = return_all
 
     def clear_cache(self, recursive=True):
         self.constraints_cache.clear()
@@ -323,15 +325,16 @@ class Attack:
             transformed_texts, current_text, original_text
         )
 
-        if self.is_tokenizer_whitebox and filtered_texts:
-            if self.use_scorer:
-                # Pick the best transformation according to USE
-                filtered_texts = self.use_scorer.get_best_transformation(
-                    original_text, filtered_texts
-                )
-            else:
-                # Pick a random one
-                filtered_texts = [random.choice(filtered_texts)]
+        if not self.return_all:
+            if self.is_tokenizer_whitebox and filtered_texts:
+                if self.use_scorer:
+                    # Pick the best transformation according to USE
+                    filtered_texts = self.use_scorer.get_best_transformation(
+                        original_text, filtered_texts
+                    )
+                else:
+                    # Pick a random one
+                    filtered_texts = [random.choice(filtered_texts)]
 
         return filtered_texts
 

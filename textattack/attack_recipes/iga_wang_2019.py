@@ -78,4 +78,5 @@ class IGAWang2019(AttackRecipe):
             search_method,
             is_tokenizer_whitebox=is_tokenizer_whitebox,
             use_scorer=UniversalSentenceEncoder(metric="angular"),
+            return_all=True,
         )
