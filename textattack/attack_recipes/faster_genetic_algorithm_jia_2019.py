@@ -16,7 +16,6 @@ from textattack.constraints.pre_transformation import (
     RepeatModification,
     StopwordModification,
 )
-from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.constraints.semantics import WordEmbeddingDistance
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import AlzantotGeneticAlgorithm
@@ -34,7 +33,7 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, is_tokenizer_whitebox=False):
+    def build(model_wrapper, is_tokenizer_whitebox=False, allow_toggle=False):
         #
         # Section 5: Experiments
         #
@@ -103,14 +102,14 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
         #
         # "[We] fix the hyperparameter values to S = 60, N = 8, K = 4, and δ = 0.5"
         #
+        transformation_white = None
         if is_tokenizer_whitebox:
-            transformation = WordSwapEmbedding(
+            transformation_white = WordSwapEmbedding(
                 max_candidates=8,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
             )
-        else:
-            transformation = WordSwapEmbedding(max_candidates=8)
+        transformation_black = WordSwapEmbedding(max_candidates=8)
         #
         # Don't modify the same word twice or stopwords
         #
@@ -146,11 +145,13 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
         )
 
         return Attack(
-            goal_function,
-            constraints,
-            transformation,
-            search_method,
+            goal_function=goal_function,
+            constraints=constraints,
+            transformation=(
+                transformation_white if is_tokenizer_whitebox else transformation_black
+            ),
+            search_method=search_method,
             is_tokenizer_whitebox=is_tokenizer_whitebox,
-            use_scorer=UniversalSentenceEncoder(metric="angular"),
-            return_all=True,
+            allow_toggle=allow_toggle,
+            transformation_black=transformation_black,
         )

@@ -16,7 +16,7 @@ class SearchMethod(ReprMixin, ABC):
     goal is met or the search is exhausted.
     """
 
-    def __call__(self, initial_result):
+    def __call__(self, initial_result, restart=False):
         """Ensures access to necessary functions, then calls
         ``perform_search``"""
         if not hasattr(self, "get_transformations"):
@@ -32,13 +32,13 @@ class SearchMethod(ReprMixin, ABC):
                 "Search Method must have access to filter_transformations method"
             )
 
-        result = self.perform_search(initial_result)
+        result = self.perform_search(initial_result, restart=restart)
         # ensure that the number of queries for this GoalFunctionResult is up-to-date
         result.num_queries = self.goal_function.num_queries
         return result
 
     @abstractmethod
-    def perform_search(self, initial_result):
+    def perform_search(self, initial_result, restart=False):
         """Perturbs `attacked_text` from ``initial_result`` until goal is
         reached or search is exhausted.
 

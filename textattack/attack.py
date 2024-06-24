@@ -18,6 +18,7 @@ from textattack.attack_results import (
     SuccessfulAttackResult,
 )
 from textattack.constraints import Constraint, PreTransformationConstraint
+from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.goal_function_results import GoalFunctionResultStatus
 from textattack.goal_functions import GoalFunction
 from textattack.models.wrappers import ModelWrapper
@@ -87,8 +88,9 @@ class Attack:
         transformation_cache_size=2**15,
         constraint_cache_size=2**15,
         is_tokenizer_whitebox=False,
-        use_scorer=None,
         return_all=False,
+        allow_toggle=False,
+        transformation_black=None,
     ):
         """Initialize an attack object.
 
@@ -168,8 +170,11 @@ class Attack:
 
         # Used when the tokenizer is white-box
         self.is_tokenizer_whitebox = is_tokenizer_whitebox
-        self.use_scorer = use_scorer
+        self.use_scorer = UniversalSentenceEncoder(metric="angular")
         self.return_all = return_all
+        self.allow_toggle = allow_toggle
+        self.transformation_white = transformation
+        self.transformation_black = transformation_black
 
     def clear_cache(self, recursive=True):
         self.constraints_cache.clear()
@@ -327,14 +332,10 @@ class Attack:
 
         if not self.return_all:
             if self.is_tokenizer_whitebox and filtered_texts:
-                if self.use_scorer:
-                    # Pick the best transformation according to USE
-                    filtered_texts = self.use_scorer.get_best_transformation(
-                        original_text, filtered_texts
-                    )
-                else:
-                    # Pick a random one
-                    filtered_texts = [random.choice(filtered_texts)]
+                # Pick the best transformation according to USE
+                filtered_texts = self.use_scorer.get_best_transformation(
+                    original_text, filtered_texts
+                )
 
         return filtered_texts
 
@@ -406,18 +407,19 @@ class Attack:
         filtered_texts.sort(key=lambda t: t.text)
         return filtered_texts
 
-    def _attack(self, initial_result):
+    def _attack(self, initial_result, restart=False):
         """Calls the ``SearchMethod`` to perturb the ``AttackedText`` stored in
         ``initial_result``.
 
         Args:
             initial_result: The initial ``GoalFunctionResult`` from which to perturb.
+            restart: Whether to restart the attack from the beginning.
 
         Returns:
             A ``SuccessfulAttackResult``, ``FailedAttackResult``,
                 or ``MaximizedAttackResult``.
         """
-        final_result = self.search_method(initial_result)
+        final_result = self.search_method(initial_result, restart=restart)
         self.clear_cache()
         if final_result.goal_status == GoalFunctionResultStatus.SUCCEEDED:
             result = SuccessfulAttackResult(
@@ -470,6 +472,23 @@ class Attack:
             return SkippedAttackResult(goal_function_result)
         else:
             result = self._attack(goal_function_result)
+            if (
+                isinstance(result, FailedAttackResult)
+                and self.is_tokenizer_whitebox
+                and self.allow_toggle
+            ):
+                # Retry with the black-box attack
+                self.is_tokenizer_whitebox = False
+                self.transformation = self.transformation_black
+                print("Retrying with black-box attack...")
+                # Reactivate white-box attack
+                result = self._attack(goal_function_result, restart=True)
+                self.is_tokenizer_whitebox = True
+                self.transformation = self.transformation_white
+                if isinstance(result, FailedAttackResult):
+                    print("Failed by retrying with black-box attack.")
+                else:
+                    print("Success by retrying with black-box attack.")
             return result
 
     def __repr__(self):

@@ -12,7 +12,6 @@ from textattack.constraints.pre_transformation import (
     RepeatModification,
     StopwordModification,
 )
-from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
 from textattack.transformations import (
@@ -36,14 +35,20 @@ class DeepWordBugGao2018(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, use_all_transformations=True, is_tokenizer_whitebox=False):
+    def build(
+        model_wrapper,
+        use_all_transformations=True,
+        is_tokenizer_whitebox=False,
+        allow_toggle=False,
+    ):
         #
         # Swap characters out from words. Choose the best of four potential transformations.
         #
+        transformation_white = None
         if is_tokenizer_whitebox:
             if use_all_transformations:
                 # We propose four similar methods:
-                transformation = CompositeTransformation(
+                transformation_white = CompositeTransformation(
                     [
                         # (1) Swap: Swap two adjacent letters in the word.
                         WordSwapNeighboringCharacterSwap(
@@ -77,32 +82,31 @@ class DeepWordBugGao2018(AttackRecipe):
                 # We use the Combined Score and the Substitution Transformer to generate
                 # adversarial samples, with the maximum edit distance difference of 30
                 # (ϵ = 30).
-                transformation = WordSwapRandomCharacterSubstitution(
+                transformation_white = WordSwapRandomCharacterSubstitution(
                     random_one=False,
                     is_tokenizer_whitebox=is_tokenizer_whitebox,
                     is_oov=model_wrapper.is_oov,
                     max_candidates=50,
                 )
+        if use_all_transformations:
+            # We propose four similar methods:
+            transformation_black = CompositeTransformation(
+                [
+                    # (1) Swap: Swap two adjacent letters in the word.
+                    WordSwapNeighboringCharacterSwap(),
+                    # (2) Substitution: Substitute a letter in the word with a random letter.
+                    WordSwapRandomCharacterSubstitution(),
+                    # (3) Deletion: Delete a random letter from the word.
+                    WordSwapRandomCharacterDeletion(),
+                    # (4) Insertion: Insert a random letter in the word.
+                    WordSwapRandomCharacterInsertion(),
+                ]
+            )
         else:
-            if use_all_transformations:
-                # We propose four similar methods:
-                transformation = CompositeTransformation(
-                    [
-                        # (1) Swap: Swap two adjacent letters in the word.
-                        WordSwapNeighboringCharacterSwap(),
-                        # (2) Substitution: Substitute a letter in the word with a random letter.
-                        WordSwapRandomCharacterSubstitution(),
-                        # (3) Deletion: Delete a random letter from the word.
-                        WordSwapRandomCharacterDeletion(),
-                        # (4) Insertion: Insert a random letter in the word.
-                        WordSwapRandomCharacterInsertion(),
-                    ]
-                )
-            else:
-                # We use the Combined Score and the Substitution Transformer to generate
-                # adversarial samples, with the maximum edit distance difference of 30
-                # (ϵ = 30).
-                transformation = WordSwapRandomCharacterSubstitution()
+            # We use the Combined Score and the Substitution Transformer to generate
+            # adversarial samples, with the maximum edit distance difference of 30
+            # (ϵ = 30).
+            transformation_black = WordSwapRandomCharacterSubstitution()
         #
         # Don't modify the same word twice or stopwords
         #
@@ -122,10 +126,13 @@ class DeepWordBugGao2018(AttackRecipe):
         search_method = GreedyWordSwapWIR()
 
         return Attack(
-            goal_function,
-            constraints,
-            transformation,
-            search_method,
+            goal_function=goal_function,
+            constraints=constraints,
+            transformation=(
+                transformation_white if is_tokenizer_whitebox else transformation_black
+            ),
+            search_method=search_method,
             is_tokenizer_whitebox=is_tokenizer_whitebox,
-            use_scorer=UniversalSentenceEncoder(metric="angular"),
+            allow_toggle=allow_toggle,
+            transformation_black=transformation_black,
         )

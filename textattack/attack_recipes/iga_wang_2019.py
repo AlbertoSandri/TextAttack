@@ -14,7 +14,7 @@ from textattack.constraints.semantics import WordEmbeddingDistance
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import ImprovedGeneticAlgorithm
 from textattack.transformations import WordSwapEmbedding
-from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
+
 
 from .attack_recipe import AttackRecipe
 
@@ -28,20 +28,20 @@ class IGAWang2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, is_tokenizer_whitebox=False):
+    def build(model_wrapper, is_tokenizer_whitebox=False, allow_toggle=False):
         #
         # Swap words with their embedding nearest-neighbors.
         # Embedding: Counter-fitted Paragram Embeddings.
         # Fix the hyperparameter value to N = Unrestricted (50)."
         #
+        transformation_white = None
         if is_tokenizer_whitebox:
-            transformation = WordSwapEmbedding(
+            transformation_white = WordSwapEmbedding(
                 max_candidates=50,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
             )
-        else:
-            transformation = WordSwapEmbedding(max_candidates=50)
+        transformation_black = WordSwapEmbedding(max_candidates=50)
         #
         # Don't modify the stopwords
         #
@@ -72,11 +72,13 @@ class IGAWang2019(AttackRecipe):
         )
 
         return Attack(
-            goal_function,
-            constraints,
-            transformation,
-            search_method,
+            goal_function=goal_function,
+            constraints=constraints,
+            transformation=(
+                transformation_white if is_tokenizer_whitebox else transformation_black
+            ),
+            search_method=search_method,
             is_tokenizer_whitebox=is_tokenizer_whitebox,
-            use_scorer=UniversalSentenceEncoder(metric="angular"),
-            return_all=True,
+            allow_toggle=allow_toggle,
+            transformation_black=transformation_black,
         )

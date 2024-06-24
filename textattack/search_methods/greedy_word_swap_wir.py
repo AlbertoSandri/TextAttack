@@ -34,6 +34,8 @@ class GreedyWordSwapWIR(SearchMethod):
     def __init__(self, wir_method="unk", unk_token="[UNK]"):
         self.wir_method = wir_method
         self.unk_token = unk_token
+        self.index_order = None
+        self.search_over = False
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -129,24 +131,27 @@ class GreedyWordSwapWIR(SearchMethod):
 
         return index_order, search_over
 
-    def perform_search(self, initial_result):
+    def perform_search(self, initial_result, restart=False):
         attacked_text = initial_result.attacked_text
 
         # Sort words by order of importance
-        index_order, search_over = self._get_index_order(attacked_text)
+        if not restart:
+            self.index_order, self.search_over = self._get_index_order(attacked_text)
         i = 0
         cur_result = initial_result
         results = None
-        while i < len(index_order) and not search_over:
+        while i < len(self.index_order) and not self.search_over:
             transformed_text_candidates = self.get_transformations(
                 cur_result.attacked_text,
                 original_text=initial_result.attacked_text,
-                indices_to_modify=[index_order[i]],
+                indices_to_modify=[self.index_order[i]],
             )
             i += 1
             if len(transformed_text_candidates) == 0:
                 continue
-            results, search_over = self.get_goal_results(transformed_text_candidates)
+            results, self.search_over = self.get_goal_results(
+                transformed_text_candidates
+            )
             results = sorted(results, key=lambda x: -x.score)
             # Skip swaps which don't improve the score
             if results[0].score > cur_result.score:
