@@ -33,7 +33,7 @@ class HuggingFaceModelWrapper(PyTorchModelWrapper):
 
         self.model = model
         self.tokenizer = tokenizer
-        self.oov_token = None
+        self.oov_token = "[UNK]"
 
     def __call__(self, text_input_list):
         """Passes inputs to HuggingFace models as keyword arguments.
@@ -148,8 +148,7 @@ class HuggingFaceModelWrapper(PyTorchModelWrapper):
 
     def is_oov(self, word: str) -> bool:
         tokens = self.tokenizer.tokenize(word)
-        token_ids = self.tokenizer.convert_tokens_to_ids(tokens)
-        return True if self.oov_token in token_ids else False
+        return True if self.oov_token in tokens else False
 
     def set_oov_token(self, oov_token):
         self.oov_token = oov_token
