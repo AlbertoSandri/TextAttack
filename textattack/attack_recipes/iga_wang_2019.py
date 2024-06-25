@@ -79,6 +79,7 @@ class IGAWang2019(AttackRecipe):
             ),
             search_method=search_method,
             is_tokenizer_whitebox=is_tokenizer_whitebox,
+            return_all=True,
             allow_toggle=allow_toggle,
             transformation_black=transformation_black,
         )
