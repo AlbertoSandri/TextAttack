@@ -70,8 +70,6 @@ class WordSwapEmbedding(WordSwap):
                         if self.is_oov(candidate_word)
                     ]
                     self.cache[word] = candidate_words
-                if len(candidate_words) > 8:
-                    print("\n\nMore than 8 OOV words found\n\n")
             return candidate_words
         except KeyError:
             # This word is not in our word embedding database, so return an empty list.
