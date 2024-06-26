@@ -88,7 +88,6 @@ class Attack:
         transformation_cache_size=2**15,
         constraint_cache_size=2**15,
         is_tokenizer_whitebox=False,
-        return_all=False,
         allow_toggle=False,
         transformation_black=None,
     ):
@@ -171,7 +170,6 @@ class Attack:
         # Used when the tokenizer is white-box
         self.is_tokenizer_whitebox = is_tokenizer_whitebox
         self.use_scorer = UniversalSentenceEncoder(metric="angular")
-        self.return_all = return_all
         self.allow_toggle = allow_toggle
         self.transformation_white = transformation
         self.transformation_black = transformation_black
@@ -330,12 +328,11 @@ class Attack:
             transformed_texts, current_text, original_text
         )
 
-        if not self.return_all:
-            if self.is_tokenizer_whitebox and filtered_texts:
-                # Pick the best transformation according to USE
-                filtered_texts = self.use_scorer.get_best_transformation(
-                    original_text, filtered_texts
-                )
+        if self.is_tokenizer_whitebox and filtered_texts:
+            # Pick the best transformation according to USE
+            filtered_texts = self.use_scorer.get_best_transformation(
+                original_text, filtered_texts
+            )
 
         return filtered_texts
 
