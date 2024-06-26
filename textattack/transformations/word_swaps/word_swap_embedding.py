@@ -45,6 +45,7 @@ class WordSwapEmbedding(WordSwap):
                 "`embedding` object must be of type `textattack.shared.AbstractWordEmbedding`."
             )
         self.embedding = embedding
+        self.cache = {}
 
     def _get_replacement_words(self, word):
         """Returns a list of possible 'candidate words' to replace a word in a
@@ -60,11 +61,15 @@ class WordSwapEmbedding(WordSwap):
                 nbr_word = self.embedding.index2word(nbr_id)
                 candidate_words.append(recover_word_case(nbr_word, word))
             if self.is_tokenizer_whitebox and candidate_words:
-                candidate_words = [
-                    candidate_word
-                    for candidate_word in candidate_words
-                    if self.is_oov(candidate_word)
-                ]
+                if word in self.cache.keys():
+                    candidate_words = self.cache[word]
+                else:
+                    candidate_words = [
+                        candidate_word
+                        for candidate_word in candidate_words
+                        if self.is_oov(candidate_word)
+                    ]
+                    self.cache[word] = candidate_words
             return candidate_words
         except KeyError:
             # This word is not in our word embedding database, so return an empty list.
