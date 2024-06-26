@@ -105,7 +105,7 @@ class FasterGeneticAlgorithmJia2019(AttackRecipe):
         transformation_white = None
         if is_tokenizer_whitebox:
             transformation_white = WordSwapEmbedding(
-                max_candidates=8,
+                max_candidates=50,
                 is_tokenizer_whitebox=is_tokenizer_whitebox,
                 is_oov=model_wrapper.is_oov,
             )
