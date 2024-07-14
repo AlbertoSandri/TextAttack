@@ -31,11 +31,21 @@ class GreedyWordSwapWIR(SearchMethod):
         model_wrapper: model wrapper used for gradient-based ranking
     """
 
-    def __init__(self, wir_method="unk", unk_token="[UNK]"):
+    def __init__(
+        self,
+        wir_method="unk",
+        unk_token="[UNK]",
+        wir_file_name=None,
+        use_precomputed_idxs=False,
+        idxs=None,
+    ):
         self.wir_method = wir_method
         self.unk_token = unk_token
         self.index_order = None
         self.search_over = False
+        self.wir_file_name = wir_file_name
+        self.use_precomputed_idxs = use_precomputed_idxs
+        self.idxs = idxs
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -136,7 +146,33 @@ class GreedyWordSwapWIR(SearchMethod):
 
         # Sort words by order of importance
         if not restart:
-            self.index_order, self.search_over = self._get_index_order(attacked_text)
+            if self.use_precomputed_idxs:
+                # TODO insert here the code to get the index order from file, I can put them already precomputed in a file
+                #  and then need to make it also general to compute in real time
+                try:
+                    self.search_over = False
+                    self.index_order = np.array(self.idxs[attacked_text.text])
+                except KeyError:  # need this for sample 14 that has only 1 index
+                    print(f"\n\n\nKeyError for {attacked_text.text}\n\n\n")
+                    self.index_order, self.search_over = self._get_index_order(
+                        attacked_text
+                    )
+            else:
+                self.index_order, self.search_over = self._get_index_order(
+                    attacked_text
+                )
+        if self.wir_file_name:
+            print(attacked_text)
+            with open(self.wir_file_name, "a") as file:
+                file.write(f"{self.index_order}\n")
+                file.write(f"Text\n")
+                words = attacked_text.words
+                file.write(f"{words}\n")
+                file.write(f"Indexes\n")
+                indexes = [i for i, _ in enumerate(words)]
+                file.write(f"{indexes}\n")
+
+            return initial_result
         i = 0
         cur_result = initial_result
         results = None

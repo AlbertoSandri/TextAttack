@@ -41,6 +41,9 @@ class TextBuggerLi2018(AttackRecipe):
         is_tokenizer_whitebox=False,
         is_bert_tokenizer_whitebox=False,
         allow_toggle=False,
+        wir_file_name=None,
+        use_precomputed_idxs=False,
+        idxs=None,
     ):
         #
         #  we propose five bug generation methods for TEXTBUGGER:
@@ -160,7 +163,12 @@ class TextBuggerLi2018(AttackRecipe):
         #
         # Greedily swap words with "Word Importance Ranking".
         #
-        search_method = GreedyWordSwapWIR(wir_method="delete")
+        search_method = GreedyWordSwapWIR(
+            wir_method="delete",
+            wir_file_name=wir_file_name,
+            use_precomputed_idxs=use_precomputed_idxs,
+            idxs=idxs,
+        )
 
         return Attack(
             goal_function=goal_function,
