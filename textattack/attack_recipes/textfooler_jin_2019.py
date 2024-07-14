@@ -32,7 +32,13 @@ class TextFoolerJin2019(AttackRecipe):
     """
 
     @staticmethod
-    def build(model_wrapper, is_tokenizer_whitebox=False, allow_toggle=False):
+    def build(
+        model_wrapper,
+        is_tokenizer_whitebox=False,
+        allow_toggle=False,
+        use_precomputed_idxs=False,
+        idxs=None,
+    ):
         #
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
@@ -94,7 +100,11 @@ class TextFoolerJin2019(AttackRecipe):
         #
         # Greedily swap words with "Word Importance Ranking".
         #
-        search_method = GreedyWordSwapWIR(wir_method="delete")
+        search_method = GreedyWordSwapWIR(
+            wir_method="delete",
+            use_precomputed_idxs=use_precomputed_idxs,
+            idxs=idxs,
+        )
 
         return Attack(
             goal_function=goal_function,
