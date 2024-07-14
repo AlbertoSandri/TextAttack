@@ -66,7 +66,7 @@ class Attacker:
         >>> attacker.attack_dataset()
     """
 
-    def __init__(self, attack, dataset, attack_args=None):
+    def __init__(self, attack, dataset, attack_args=None, wir_file_name=None):
         assert isinstance(
             attack, Attack
         ), f"`attack` argument must be of type `textattack.Attack`, but got type of `{type(attack)}`."
@@ -88,6 +88,8 @@ class Attacker:
 
         # This is to be set if loading from a checkpoint
         self._checkpoint = None
+
+        self.wir_file_name = wir_file_name
 
     def _get_worklist(self, start, end, num_examples, shuffle):
         if end - start < num_examples:
@@ -157,6 +159,9 @@ class Attacker:
         sample_exhaustion_warned = False
         while worklist:
             idx = worklist.popleft()
+            if self.wir_file_name:
+                with open(self.wir_file_name, "a") as file:
+                    file.write(f"Sample {idx}\n")
             try:
                 example, ground_truth_output = self.dataset[idx]
             except IndexError:
