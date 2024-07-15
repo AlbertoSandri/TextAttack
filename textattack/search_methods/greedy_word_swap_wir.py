@@ -153,7 +153,7 @@ class GreedyWordSwapWIR(SearchMethod):
                     self.search_over = False
                     self.index_order = np.array(self.idxs[attacked_text.text])
                 except KeyError:  # need this for sample 14 that has only 1 index
-                    print(f"\n\n\nKeyError for {attacked_text.text}\n\n\n")
+                    print(f"\n\n\nKeyError for: '{attacked_text.text}'\n\n\n")
                     self.index_order, self.search_over = self._get_index_order(
                         attacked_text
                     )

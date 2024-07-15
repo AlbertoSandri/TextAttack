@@ -155,7 +155,7 @@ class TextBuggerLi2018(AttackRecipe):
         # ... "Furthermore, the semantic similarity threshold \eps is set
         # as 0.8 to guarantee a good trade-off between quality and
         # strength of the generated adversarial text."
-        # constraints.append(UniversalSentenceEncoder(threshold=0.8))
+        constraints.append(UniversalSentenceEncoder(threshold=0.8))
         #
         # Goal is untargeted classification
         #
