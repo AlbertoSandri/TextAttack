@@ -145,8 +145,6 @@ class GreedyWordSwapWIR(SearchMethod):
         # Sort words by order of importance
         if not restart:
             if self.precomputed_idxs:
-                # TODO insert here the code to get the index order from file, I can put them already precomputed in a file
-                #  and then need to make it also general to compute in real time
                 try:
                     self.search_over = False
                     self.index_order = np.array(
