@@ -41,8 +41,7 @@ class DeepWordBugGao2018(AttackRecipe):
         is_tokenizer_whitebox=False,
         allow_toggle=False,
         wir_file_name=None,
-        use_precomputed_idxs=False,
-        idxs=None,
+        precomputed_idxs=None,
     ):
         #
         # Swap characters out from words. Choose the best of four potential transformations.
@@ -128,8 +127,7 @@ class DeepWordBugGao2018(AttackRecipe):
         #
         search_method = GreedyWordSwapWIR(
             wir_file_name=wir_file_name,
-            use_precomputed_idxs=use_precomputed_idxs,
-            idxs=idxs,
+            precomputed_idxs=precomputed_idxs,
         )
 
         return Attack(

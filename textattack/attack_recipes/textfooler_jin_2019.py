@@ -36,8 +36,8 @@ class TextFoolerJin2019(AttackRecipe):
         model_wrapper,
         is_tokenizer_whitebox=False,
         allow_toggle=False,
-        use_precomputed_idxs=False,
-        idxs=None,
+        wir_file_name=None,
+        precomputed_idxs=None,
     ):
         #
         # Swap words with their 50 closest embedding nearest-neighbors.
@@ -102,8 +102,8 @@ class TextFoolerJin2019(AttackRecipe):
         #
         search_method = GreedyWordSwapWIR(
             wir_method="delete",
-            use_precomputed_idxs=use_precomputed_idxs,
-            idxs=idxs,
+            wir_file_name=wir_file_name,
+            precomputed_idxs=precomputed_idxs,
         )
 
         return Attack(

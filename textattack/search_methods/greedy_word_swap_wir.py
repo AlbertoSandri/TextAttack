@@ -36,16 +36,14 @@ class GreedyWordSwapWIR(SearchMethod):
         wir_method="unk",
         unk_token="[UNK]",
         wir_file_name=None,
-        use_precomputed_idxs=False,
-        idxs=None,
+        precomputed_idxs=None,
     ):
         self.wir_method = wir_method
         self.unk_token = unk_token
         self.index_order = None
         self.search_over = False
         self.wir_file_name = wir_file_name
-        self.use_precomputed_idxs = use_precomputed_idxs
-        self.idxs = idxs
+        self.precomputed_idxs = precomputed_idxs
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -146,12 +144,14 @@ class GreedyWordSwapWIR(SearchMethod):
 
         # Sort words by order of importance
         if not restart:
-            if self.use_precomputed_idxs:
+            if self.precomputed_idxs:
                 # TODO insert here the code to get the index order from file, I can put them already precomputed in a file
                 #  and then need to make it also general to compute in real time
                 try:
                     self.search_over = False
-                    self.index_order = np.array(self.idxs[attacked_text.text])
+                    self.index_order = np.array(
+                        self.precomputed_idxs[attacked_text.text]
+                    )
                 except KeyError:  # need this for sample 14 that has only 1 index
                     print(f"\n\n\nKeyError for: '{attacked_text.text}'\n\n\n")
                     self.index_order, self.search_over = self._get_index_order(
