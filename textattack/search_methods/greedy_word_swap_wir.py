@@ -37,6 +37,8 @@ class GreedyWordSwapWIR(SearchMethod):
         unk_token="[UNK]",
         wir_file_name=None,
         precomputed_idxs=None,
+        logistic_regression=None,
+        pca=None,
     ):
         self.wir_method = wir_method
         self.unk_token = unk_token
@@ -44,6 +46,9 @@ class GreedyWordSwapWIR(SearchMethod):
         self.search_over = False
         self.wir_file_name = wir_file_name
         self.precomputed_idxs = precomputed_idxs
+        self.logistic_regression = logistic_regression
+        self.pca = pca
+        self.texts_cache = {}
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -141,6 +146,7 @@ class GreedyWordSwapWIR(SearchMethod):
 
     def perform_search(self, initial_result, restart=False):
         attacked_text = initial_result.attacked_text
+        self.texts_cache = {}
 
         # Sort words by order of importance
         if not restart:
@@ -181,6 +187,10 @@ class GreedyWordSwapWIR(SearchMethod):
                 indices_to_modify=[self.index_order[i]],
             )
             i += 1
+            if self.logistic_regression and self.pca:
+                transformed_text_candidates = self.filter_candidates(
+                    transformed_text_candidates
+                )
             if len(transformed_text_candidates) == 0:
                 continue
             results, self.search_over = self.get_goal_results(
@@ -230,3 +240,137 @@ class GreedyWordSwapWIR(SearchMethod):
 
     def extra_repr_keys(self):
         return ["wir_method"]
+
+    def filter_candidates(self, candidates):
+
+        # Check there are candidates
+        if len(candidates) == 0:
+            return candidates
+
+        # Cached texts
+        filtered_candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.text in self.texts_cache.keys()
+            and self.texts_cache[candidate.text] > 0.5
+        ]
+
+        # No cached texts
+        texts_no_cache = [
+            candidate.text
+            for candidate in candidates
+            if candidate.text not in self.texts_cache.keys()
+        ]
+
+        # Get embeddings for candidates
+        model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+        embeddings_no_cache = compute_embeddings(texts_no_cache, model_name=model_name)
+        embeddings_df = pd.DataFrame(embeddings_no_cache.numpy())
+        # embeddings are pandas dataframe (n candidates, embedding size)
+
+        # Reduce embeddings using PCA
+        principal_components = self.pca.transform(embeddings_df)
+        # obtain numpy array (n candidates, reduced embedding size (2))
+
+        # Get predictions from logistic regression
+        toxic_probs = self.logistic_regression.predict_proba(principal_components)[:, 1]
+
+        # Filter candidates with toxic_probs > 0.5
+        filtered_candidates.extend(
+            [
+                candidate
+                for candidate, prob in zip(candidates, toxic_probs)
+                if prob > 0.5
+            ]
+        )
+
+        # Update cache
+        for text, prob in zip(texts_no_cache, toxic_probs):
+            self.texts_cache[text] = prob
+
+        return filtered_candidates
+
+
+import torch
+import pandas as pd
+import numpy as np
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from tqdm import tqdm
+from torch.utils.data import DataLoader, Dataset
+import transformers
+
+transformers.logging.set_verbosity_error()
+
+
+class TextDataset(Dataset):
+    def __init__(self, texts, tokenizer):
+        self.texts = texts
+        self.tokenizer = tokenizer
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        text = self.texts[idx]
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=512,
+        )
+        return {key: val.squeeze(0) for key, val in inputs.items()}
+
+
+def compute_embeddings(
+    texts: list[str], model_name: str, batch_size: int = 32
+) -> torch.Tensor:
+    """Compute sentence embeddings using a pre-trained transformer model.
+
+    Args:
+        texts (list[str]): List of texts to compute embeddings for.
+        model_name (str): Name of the pre-trained model to use.
+        batch_size (int): Batch size.
+
+    Returns:
+        torch.Tensor: Tensor with the sentence embeddings. Shape: (num_texts, embedding_size)
+    """
+
+    # Load model and tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_name, output_hidden_states=True
+    )
+
+    # Load model to the correct device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    # Create dataset and dataloader
+    dataset = TextDataset(texts, tokenizer)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+    all_embeddings = []
+
+    with torch.no_grad():
+        for batch in tqdm(dataloader):
+            # Move inputs to the correct device
+            inputs = {key: val.to(device) for key, val in batch.items()}
+
+            # Extract embeddings
+            outputs = model(**inputs)
+
+            # Extract last hidden state
+            hidden_states = outputs.hidden_states
+            last_hidden_state = hidden_states[-1]
+
+            # Compute sentence embedding by averaging the token embeddings
+            sentence_embeddings = last_hidden_state.mean(
+                dim=1
+            )  # Shape: (batch_size, sequence_length, hidden_size)
+
+            all_embeddings.append(sentence_embeddings.cpu())
+
+    # Concatenate all embeddings into a single tensor
+    all_embeddings = torch.cat(all_embeddings, dim=0)
+    return all_embeddings
