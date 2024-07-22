@@ -189,7 +189,7 @@ class GreedyWordSwapWIR(SearchMethod):
             i += 1
             if self.logistic_regression:
                 transformed_text_candidates = self.filter_candidates(
-                    transformed_text_candidates,
+                    transformed_text_candidates, threshold=0.3386383103514465
                 )
             if len(transformed_text_candidates) == 0:
                 continue
@@ -241,7 +241,7 @@ class GreedyWordSwapWIR(SearchMethod):
     def extra_repr_keys(self):
         return ["wir_method"]
 
-    def filter_candidates(self, candidates, threshold=0.5):
+    def filter_candidates(self, candidates, threshold=0.5, return_one=False):
 
         # Check there are candidates
         if len(candidates) == 0:
@@ -252,7 +252,7 @@ class GreedyWordSwapWIR(SearchMethod):
             candidate
             for candidate in candidates
             if candidate.text in self.texts_cache.keys()
-            and self.texts_cache[candidate.text] > threshold
+            and self.texts_cache[candidate.text] < threshold
         ]
 
         # No cached texts
@@ -281,13 +281,21 @@ class GreedyWordSwapWIR(SearchMethod):
             [
                 candidate
                 for candidate, prob in zip(candidates, toxic_probs)
-                if prob > threshold
+                if prob < threshold
             ]
         )
 
         # Update cache
         for text, prob in zip(texts_no_cache, toxic_probs):
             self.texts_cache[text] = prob
+
+        if return_one:
+            if len(filtered_candidates) > 0:
+                filtered_candidates_sorted = sorted(
+                    filtered_candidates,
+                    key=lambda candidate: self.texts_cache[candidate.text],
+                )
+                return [filtered_candidates_sorted[0]]
 
         return filtered_candidates
 
