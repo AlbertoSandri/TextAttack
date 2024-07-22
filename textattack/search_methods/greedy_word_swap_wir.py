@@ -267,6 +267,7 @@ class GreedyWordSwapWIR(SearchMethod):
         embeddings_no_cache = compute_embeddings(texts_no_cache, model_name=model_name)
         embeddings = pd.DataFrame(
             embeddings_no_cache.numpy(),
+            columns=[str(i) for i in range(embeddings_no_cache.shape[1])],
         )
         # embeddings are pandas dataframe (n candidates, embedding size)
 
