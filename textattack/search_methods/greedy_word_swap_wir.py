@@ -187,9 +187,9 @@ class GreedyWordSwapWIR(SearchMethod):
                 indices_to_modify=[self.index_order[i]],
             )
             i += 1
-            if self.logistic_regression and self.pca:
+            if self.logistic_regression:
                 transformed_text_candidates = self.filter_candidates(
-                    transformed_text_candidates
+                    transformed_text_candidates,
                 )
             if len(transformed_text_candidates) == 0:
                 continue
@@ -241,7 +241,7 @@ class GreedyWordSwapWIR(SearchMethod):
     def extra_repr_keys(self):
         return ["wir_method"]
 
-    def filter_candidates(self, candidates):
+    def filter_candidates(self, candidates, threshold=0.5):
 
         # Check there are candidates
         if len(candidates) == 0:
@@ -252,7 +252,7 @@ class GreedyWordSwapWIR(SearchMethod):
             candidate
             for candidate in candidates
             if candidate.text in self.texts_cache.keys()
-            and self.texts_cache[candidate.text] > 0.5
+            and self.texts_cache[candidate.text] > threshold
         ]
 
         # No cached texts
@@ -265,22 +265,23 @@ class GreedyWordSwapWIR(SearchMethod):
         # Get embeddings for candidates
         model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
         embeddings_no_cache = compute_embeddings(texts_no_cache, model_name=model_name)
-        embeddings_df = pd.DataFrame(embeddings_no_cache.numpy())
+        embeddings = pd.DataFrame(embeddings_no_cache.numpy())
         # embeddings are pandas dataframe (n candidates, embedding size)
 
         # Reduce embeddings using PCA
-        principal_components = self.pca.transform(embeddings_df)
+        if self.pca:
+            embeddings = self.pca.transform(embeddings)
         # obtain numpy array (n candidates, reduced embedding size (2))
 
         # Get predictions from logistic regression
-        toxic_probs = self.logistic_regression.predict_proba(principal_components)[:, 1]
+        toxic_probs = self.logistic_regression.predict_proba(embeddings)[:, 1]
 
         # Filter candidates with toxic_probs > 0.5
         filtered_candidates.extend(
             [
                 candidate
                 for candidate, prob in zip(candidates, toxic_probs)
-                if prob > 0.5
+                if prob > threshold
             ]
         )
 
