@@ -189,7 +189,7 @@ class GreedyWordSwapWIR(SearchMethod):
             i += 1
             if self.logistic_regression:
                 transformed_text_candidates = self.filter_candidates(
-                    transformed_text_candidates, threshold=0.3386383103514465
+                    transformed_text_candidates,
                 )
             if len(transformed_text_candidates) == 0:
                 continue
@@ -265,7 +265,9 @@ class GreedyWordSwapWIR(SearchMethod):
         # Get embeddings for candidates
         model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
         embeddings_no_cache = compute_embeddings(texts_no_cache, model_name=model_name)
-        embeddings = pd.DataFrame(embeddings_no_cache.numpy())
+        embeddings = pd.DataFrame(
+            embeddings_no_cache.numpy(),
+        )
         # embeddings are pandas dataframe (n candidates, embedding size)
 
         # Reduce embeddings using PCA

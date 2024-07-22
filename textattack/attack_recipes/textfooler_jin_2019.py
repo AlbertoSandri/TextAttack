@@ -38,6 +38,8 @@ class TextFoolerJin2019(AttackRecipe):
         allow_toggle=False,
         wir_file_name=None,
         precomputed_idxs=None,
+        logistic_regression=None,
+        pca=None,
     ):
         #
         # Swap words with their 50 closest embedding nearest-neighbors.
@@ -104,6 +106,8 @@ class TextFoolerJin2019(AttackRecipe):
             wir_method="delete",
             wir_file_name=wir_file_name,
             precomputed_idxs=precomputed_idxs,
+            logistic_regression=logistic_regression,
+            pca=pca,
         )
 
         return Attack(
