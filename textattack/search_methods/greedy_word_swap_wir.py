@@ -11,9 +11,17 @@ Entailment by Jin et. al, 2019. See https://arxiv.org/abs/1907.11932 and
 https://github.com/jind11/TextFooler.
 """
 
-import numpy as np
 import torch
+import pandas as pd
+import numpy as np
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from tqdm import tqdm
+from torch.utils.data import DataLoader, Dataset
+import transformers
 from torch.nn.functional import softmax
+
+transformers.logging.set_verbosity_error()
+
 
 from textattack.goal_function_results import GoalFunctionResultStatus
 from textattack.search_methods import SearchMethod
@@ -187,6 +195,7 @@ class GreedyWordSwapWIR(SearchMethod):
                 indices_to_modify=[self.index_order[i]],
             )
             i += 1
+            # Filter candidates using logistic regression
             if self.logistic_regression and not restart:
                 transformed_text_candidates = self.filter_candidates(
                     transformed_text_candidates, return_one=True
@@ -241,7 +250,19 @@ class GreedyWordSwapWIR(SearchMethod):
     def extra_repr_keys(self):
         return ["wir_method"]
 
-    def filter_candidates(self, candidates, threshold=0.5, return_one=False):
+    def filter_candidates(
+        self, candidates: list, threshold: int = 0.5, return_one: bool = False
+    ) -> list:
+        """Filter candidates using logistic regression. If pca is not None, it is used to reduce the embeddings.
+
+        Args:
+            candidates (list): List of candidates to filter.
+            threshold (int): Threshold for filtering candidates.
+            return_one (bool): Bool to return only one candidate.
+
+        Returns:
+            list: List of filtered candidates.
+        """
 
         # Check there are candidates
         if len(candidates) == 0:
@@ -269,17 +290,17 @@ class GreedyWordSwapWIR(SearchMethod):
             embeddings_no_cache.numpy(),
             columns=[str(i) for i in range(embeddings_no_cache.shape[1])],
         )
-        # embeddings are pandas dataframe (n candidates, embedding size)
+        # Embeddings are pandas dataframe (n candidates, embedding size)
 
         # Reduce embeddings using PCA
         if self.pca:
             embeddings = self.pca.transform(embeddings)
-        # obtain numpy array (n candidates, reduced embedding size (2))
+            # Obtain numpy array (n candidates, reduced embedding size (2))
 
         # Get predictions from logistic regression
         toxic_probs = self.logistic_regression.predict_proba(embeddings)[:, 1]
 
-        # Filter candidates with toxic_probs < threshold
+        # Filter candidates with toxic probability < threshold
         filtered_candidates.extend(
             [
                 candidate
@@ -292,6 +313,7 @@ class GreedyWordSwapWIR(SearchMethod):
         for text, prob in zip(texts_no_cache, toxic_probs):
             self.texts_cache[text] = prob
 
+        # Return the candidate with the lowest toxic probability
         if return_one:
             if len(filtered_candidates) > 0:
                 filtered_candidates_sorted = sorted(
@@ -301,17 +323,6 @@ class GreedyWordSwapWIR(SearchMethod):
                 return [filtered_candidates_sorted[0]]
 
         return filtered_candidates
-
-
-import torch
-import pandas as pd
-import numpy as np
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from tqdm import tqdm
-from torch.utils.data import DataLoader, Dataset
-import transformers
-
-transformers.logging.set_verbosity_error()
 
 
 class TextDataset(Dataset):
