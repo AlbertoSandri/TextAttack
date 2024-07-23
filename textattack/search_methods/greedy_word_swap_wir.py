@@ -187,9 +187,9 @@ class GreedyWordSwapWIR(SearchMethod):
                 indices_to_modify=[self.index_order[i]],
             )
             i += 1
-            if self.logistic_regression:
+            if self.logistic_regression and not restart:
                 transformed_text_candidates = self.filter_candidates(
-                    transformed_text_candidates,
+                    transformed_text_candidates, return_one=True
                 )
             if len(transformed_text_candidates) == 0:
                 continue
@@ -279,7 +279,7 @@ class GreedyWordSwapWIR(SearchMethod):
         # Get predictions from logistic regression
         toxic_probs = self.logistic_regression.predict_proba(embeddings)[:, 1]
 
-        # Filter candidates with toxic_probs > 0.5
+        # Filter candidates with toxic_probs < threshold
         filtered_candidates.extend(
             [
                 candidate

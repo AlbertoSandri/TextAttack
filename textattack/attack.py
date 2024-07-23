@@ -469,19 +469,17 @@ class Attack:
             return SkippedAttackResult(goal_function_result)
         else:
             result = self._attack(goal_function_result)
-            if (
-                isinstance(result, FailedAttackResult)
-                and self.is_tokenizer_whitebox
-                and self.allow_toggle
-            ):
+            if isinstance(result, FailedAttackResult) and self.allow_toggle:
                 # Retry with the black-box attack
+                was_tokenizer_whitebox = True if self.is_tokenizer_whitebox else False
                 self.is_tokenizer_whitebox = False
                 self.transformation = self.transformation_black
                 print("Retrying with black-box attack...")
-                # Reactivate white-box attack
                 result = self._attack(goal_function_result, restart=True)
-                self.is_tokenizer_whitebox = True
-                self.transformation = self.transformation_white
+                # Reactivate white-box attack
+                if was_tokenizer_whitebox:
+                    self.is_tokenizer_whitebox = True
+                    self.transformation = self.transformation_white
                 if isinstance(result, FailedAttackResult):
                     print("Failed by retrying with black-box attack.")
                 else:
