@@ -57,6 +57,7 @@ class GreedyWordSwapWIR(SearchMethod):
         self.logistic_regression = logistic_regression
         self.pca = pca
         self.texts_cache = {}
+        # self.attacks_cache = {}
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -158,6 +159,7 @@ class GreedyWordSwapWIR(SearchMethod):
 
         # Sort words by order of importance
         if not restart:
+            # self.attacks_cache = {}
             if self.precomputed_idxs:
                 try:
                     self.search_over = False
@@ -202,10 +204,39 @@ class GreedyWordSwapWIR(SearchMethod):
                 )
             if len(transformed_text_candidates) == 0:
                 continue
+
+            """ Uncomment this part to use cache for attacks. Need to uncomment also the lines with 'self.attacks_cache'
+            # Cached texts
+            results_cache = [
+                self.attacks_cache[candidate.text]
+                for candidate in transformed_text_candidates
+                if candidate.text in self.attacks_cache.keys()
+            ]
+
+            # No cached texts
+            candidates_no_cache = [
+                candidate
+                for candidate in transformed_text_candidates
+                if candidate.text not in self.attacks_cache.keys()
+            ]
+            results, self.search_over = self.get_goal_results(candidates_no_cache)
+            """
+
             results, self.search_over = self.get_goal_results(
                 transformed_text_candidates
             )
+
+            """
+            # Update cache
+            texts_no_cache = [candidate.text for candidate in candidates_no_cache]
+            for text, result in zip(texts_no_cache, results):
+                self.attacks_cache[text] = result
+
+            results.extend(results_cache)
+            """
+
             results = sorted(results, key=lambda x: -x.score)
+
             # Skip swaps which don't improve the score
             if results[0].score > cur_result.score:
                 cur_result = results[0]
