@@ -44,6 +44,8 @@ class DeepWordBugGao2018(AttackRecipe):
         precomputed_idxs=None,
         logistic_regression=None,
         pca=None,
+        number_queries_file_name=None,
+        number_words_file_name=None,
     ):
         #
         # Swap characters out from words. Choose the best of four potential transformations.
@@ -132,6 +134,8 @@ class DeepWordBugGao2018(AttackRecipe):
             precomputed_idxs=precomputed_idxs,
             logistic_regression=logistic_regression,
             pca=pca,
+            number_queries_file_name=number_queries_file_name,
+            number_words_file_name=number_words_file_name,
         )
 
         return Attack(

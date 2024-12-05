@@ -45,6 +45,8 @@ class TextBuggerLi2018(AttackRecipe):
         precomputed_idxs=None,
         logistic_regression=None,
         pca=None,
+        number_queries_file_name=None,
+        number_words_file_name=None,
     ):
         #
         #  we propose five bug generation methods for TEXTBUGGER:
@@ -170,6 +172,8 @@ class TextBuggerLi2018(AttackRecipe):
             precomputed_idxs=precomputed_idxs,
             logistic_regression=logistic_regression,
             pca=pca,
+            number_queries_file_name=number_queries_file_name,
+            number_words_file_name=number_words_file_name,
         )
 
         return Attack(

@@ -47,6 +47,8 @@ class GreedyWordSwapWIR(SearchMethod):
         precomputed_idxs=None,
         logistic_regression=None,
         pca=None,
+        number_queries_file_name=None,
+        number_words_file_name=None,
     ):
         self.wir_method = wir_method
         self.unk_token = unk_token
@@ -58,6 +60,8 @@ class GreedyWordSwapWIR(SearchMethod):
         self.pca = pca
         self.texts_cache = {}
         # self.attacks_cache = {}
+        self.number_queries_file_name = number_queries_file_name
+        self.number_words_file_name = number_words_file_name
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -175,6 +179,9 @@ class GreedyWordSwapWIR(SearchMethod):
                 self.index_order, self.search_over = self._get_index_order(
                     attacked_text
                 )
+                if self.number_words_file_name:
+                    with open(self.number_words_file_name, "a") as file:
+                        file.write(f"{len(self.index_order)}\n")
         if self.wir_file_name:
             print(attacked_text)
             with open(self.wir_file_name, "a") as file:
@@ -234,6 +241,7 @@ class GreedyWordSwapWIR(SearchMethod):
 
             results.extend(results_cache)
             """
+            num_queries = results[-1].num_queries
 
             results = sorted(results, key=lambda x: -x.score)
 
@@ -262,8 +270,14 @@ class GreedyWordSwapWIR(SearchMethod):
                     if similarity_score > max_similarity:
                         max_similarity = similarity_score
                         best_result = result
+                if self.number_queries_file_name:
+                    with open(self.number_queries_file_name, "a") as file:
+                        file.write(f"{num_queries}\n")
                 return best_result
 
+        if self.number_queries_file_name:
+            with open(self.number_queries_file_name, "a") as file:
+                file.write(f"{num_queries}\n")
         return cur_result
 
     def check_transformation_compatibility(self, transformation):
